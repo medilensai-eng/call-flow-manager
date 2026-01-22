@@ -27,6 +27,7 @@ export type Database = {
           fee: number | null
           id: string
           last_called_at: string | null
+          qualification: string | null
           remark: string | null
           updated_at: string
         }
@@ -42,6 +43,7 @@ export type Database = {
           fee?: number | null
           id?: string
           last_called_at?: string | null
+          qualification?: string | null
           remark?: string | null
           updated_at?: string
         }
@@ -57,6 +59,7 @@ export type Database = {
           fee?: number | null
           id?: string
           last_called_at?: string | null
+          qualification?: string | null
           remark?: string | null
           updated_at?: string
         }
