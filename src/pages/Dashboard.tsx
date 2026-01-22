@@ -1,36 +1,147 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/Sidebar';
 import { KPICard } from '@/components/KPICard';
 import { useAuth } from '@/contexts/AuthContext';
-import { Phone, PhoneCall, PhoneOff, ThumbsUp, ThumbsDown, Clock, Users, TrendingUp } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Phone, ThumbsUp, ThumbsDown, Clock, Users, TrendingUp, PhoneCall } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { format, subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, parseISO, isToday } from 'date-fns';
 
-const barData = [
-  { name: 'Mon', calls: 45, interested: 12 },
-  { name: 'Tue', calls: 52, interested: 18 },
-  { name: 'Wed', calls: 38, interested: 10 },
-  { name: 'Thu', calls: 65, interested: 22 },
-  { name: 'Fri', calls: 48, interested: 15 },
-  { name: 'Sat', calls: 30, interested: 8 },
-  { name: 'Sun', calls: 20, interested: 5 },
-];
-
-const pieData = [
-  { name: 'Interested', value: 35, color: 'hsl(var(--success))' },
-  { name: 'Not Interested', value: 25, color: 'hsl(var(--destructive))' },
-  { name: 'Pending', value: 40, color: 'hsl(var(--warning))' },
-];
-
-const trendData = [
-  { date: 'Week 1', calls: 180 },
-  { date: 'Week 2', calls: 220 },
-  { date: 'Week 3', calls: 195 },
-  { date: 'Week 4', calls: 280 },
-];
+interface DashboardData {
+  totalCalls: number;
+  interested: number;
+  notInterested: number;
+  pending: number;
+  activeCallers: number;
+  callsToday: number;
+  conversionRate: number;
+  weeklyData: { name: string; calls: number; interested: number }[];
+  trendData: { date: string; calls: number }[];
+}
 
 const Dashboard = () => {
   const { role, profile } = useAuth();
+  const [data, setData] = useState<DashboardData>({
+    totalCalls: 0,
+    interested: 0,
+    notInterested: 0,
+    pending: 0,
+    activeCallers: 0,
+    callsToday: 0,
+    conversionRate: 0,
+    weeklyData: [],
+    trendData: [],
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch all customer data
+      const { data: customerData, error: customerError } = await supabase
+        .from('customer_data')
+        .select('*');
+
+      if (customerError) throw customerError;
+
+      const allCalls = customerData || [];
+
+      // Calculate KPIs
+      const totalCalls = allCalls.length;
+      const interested = allCalls.filter(c => c.call_status === 'interested').length;
+      const notInterested = allCalls.filter(c => c.call_status === 'not_interested').length;
+      const pending = allCalls.filter(c => c.call_status === 'pending').length;
+      
+      // Calls today
+      const today = new Date();
+      const callsToday = allCalls.filter(c => {
+        if (!c.last_called_at) return false;
+        return isToday(parseISO(c.last_called_at));
+      }).length;
+
+      // Conversion rate (interested / total calls with outcome)
+      const callsWithOutcome = interested + notInterested;
+      const conversionRate = callsWithOutcome > 0 ? (interested / callsWithOutcome) * 100 : 0;
+
+      // Fetch active callers (users with customer_caller role who logged in today)
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('session_logs')
+        .select('user_id, login_at')
+        .gte('login_at', startOfDay(today).toISOString());
+
+      const uniqueActiveCallers = new Set(sessionData?.map(s => s.user_id) || []);
+      const activeCallers = uniqueActiveCallers.size;
+
+      // Weekly data (last 7 days)
+      const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const weeklyData = daysOfWeek.map((name, index) => {
+        const dayDate = subDays(today, (today.getDay() - index + 7) % 7);
+        const dayCalls = allCalls.filter(c => {
+          if (!c.last_called_at) return false;
+          const callDate = parseISO(c.last_called_at);
+          return format(callDate, 'yyyy-MM-dd') === format(dayDate, 'yyyy-MM-dd');
+        });
+        return {
+          name,
+          calls: dayCalls.length,
+          interested: dayCalls.filter(c => c.call_status === 'interested').length,
+        };
+      });
+
+      // Trend data (last 4 weeks)
+      const trendData = [];
+      for (let i = 3; i >= 0; i--) {
+        const weekStart = startOfWeek(subDays(today, i * 7));
+        const weekEnd = endOfWeek(subDays(today, i * 7));
+        const weekCalls = allCalls.filter(c => {
+          if (!c.created_at) return false;
+          const callDate = parseISO(c.created_at);
+          return callDate >= weekStart && callDate <= weekEnd;
+        }).length;
+        trendData.push({
+          date: `Week ${4 - i}`,
+          calls: weekCalls,
+        });
+      }
+
+      setData({
+        totalCalls,
+        interested,
+        notInterested,
+        pending,
+        activeCallers,
+        callsToday,
+        conversionRate,
+        weeklyData,
+        trendData,
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const pieData = [
+    { name: 'Interested', value: data.interested, color: 'hsl(var(--success))' },
+    { name: 'Not Interested', value: data.notInterested, color: 'hsl(var(--destructive))' },
+    { name: 'Pending', value: data.pending, color: 'hsl(var(--warning))' },
+  ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Sidebar />
+        <main className="ml-64 p-8 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -51,28 +162,25 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <KPICard
             title="Total Calls"
-            value="1,247"
+            value={data.totalCalls.toLocaleString()}
             icon={Phone}
-            trend={{ value: 12, isPositive: true }}
             variant="primary"
           />
           <KPICard
             title="Interested"
-            value="342"
+            value={data.interested.toLocaleString()}
             icon={ThumbsUp}
-            trend={{ value: 8, isPositive: true }}
             variant="success"
           />
           <KPICard
             title="Not Interested"
-            value="285"
+            value={data.notInterested.toLocaleString()}
             icon={ThumbsDown}
-            trend={{ value: 3, isPositive: false }}
             variant="destructive"
           />
           <KPICard
             title="Pending"
-            value="620"
+            value={data.pending.toLocaleString()}
             icon={Clock}
             variant="warning"
           />
@@ -87,7 +195,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={barData}>
+                <BarChart data={data.weeklyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
                   <YAxis stroke="hsl(var(--muted-foreground))" />
@@ -98,8 +206,8 @@ const Dashboard = () => {
                       borderRadius: '8px'
                     }}
                   />
-                  <Bar dataKey="calls" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="interested" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="calls" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Total Calls" />
+                  <Bar dataKey="interested" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} name="Interested" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -142,7 +250,7 @@ const Dashboard = () => {
                       className="w-3 h-3 rounded-full" 
                       style={{ backgroundColor: item.color }}
                     />
-                    <span className="text-sm text-muted-foreground">{item.name}</span>
+                    <span className="text-sm text-muted-foreground">{item.name}: {item.value}</span>
                   </div>
                 ))}
               </div>
@@ -157,7 +265,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={trendData}>
+              <LineChart data={data.trendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
                 <YAxis stroke="hsl(var(--muted-foreground))" />
@@ -174,6 +282,7 @@ const Dashboard = () => {
                   stroke="hsl(var(--primary))" 
                   strokeWidth={3}
                   dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2 }}
+                  name="Total Calls"
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -190,8 +299,8 @@ const Dashboard = () => {
                     <Users className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold font-display">24</p>
-                    <p className="text-sm text-muted-foreground">Active Callers</p>
+                    <p className="text-2xl font-bold font-display">{data.activeCallers}</p>
+                    <p className="text-sm text-muted-foreground">Active Callers Today</p>
                   </div>
                 </div>
               </CardContent>
@@ -203,7 +312,7 @@ const Dashboard = () => {
                     <TrendingUp className="h-6 w-6 text-success" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold font-display">27.4%</p>
+                    <p className="text-2xl font-bold font-display">{data.conversionRate.toFixed(1)}%</p>
                     <p className="text-sm text-muted-foreground">Conversion Rate</p>
                   </div>
                 </div>
@@ -216,7 +325,7 @@ const Dashboard = () => {
                     <PhoneCall className="h-6 w-6 text-accent" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold font-display">52</p>
+                    <p className="text-2xl font-bold font-display">{data.callsToday}</p>
                     <p className="text-sm text-muted-foreground">Calls Today</p>
                   </div>
                 </div>
