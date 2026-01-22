@@ -28,14 +28,18 @@ const Auth = () => {
   const [signupRole, setSignupRole] = useState<AppRole>('customer_caller');
 
   useEffect(() => {
-    if (user && role) {
-      if (role === 'customer_caller') {
-        navigate('/profile');
-      } else {
-        navigate('/dashboard');
-      }
+    if (!loading && user) {
+      // Wait a bit for role to be fetched, then redirect
+      const timer = setTimeout(() => {
+        if (role === 'customer_caller') {
+          navigate('/profile');
+        } else {
+          navigate('/dashboard');
+        }
+      }, 500);
+      return () => clearTimeout(timer);
     }
-  }, [user, role, navigate]);
+  }, [user, role, loading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
