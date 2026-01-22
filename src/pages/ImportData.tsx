@@ -21,7 +21,7 @@ interface ParsedRow {
   customer_phone: string;
   customer_email?: string;
   course?: string;
-  fee?: number;
+  qualification?: string;
 }
 
 const ImportData = () => {
@@ -95,7 +95,7 @@ const ImportData = () => {
     const phoneIdx = headers.findIndex(h => h.includes('phone') || h.includes('mobile'));
     const emailIdx = headers.findIndex(h => h.includes('email'));
     const courseIdx = headers.findIndex(h => h.includes('course'));
-    const feeIdx = headers.findIndex(h => h.includes('fee') || h.includes('amount'));
+    const qualificationIdx = headers.findIndex(h => h.includes('qualification') || h.includes('degree') || h.includes('education'));
 
     if (nameIdx === -1 || phoneIdx === -1) {
       toast.error('CSV must contain "name" and "phone" columns');
@@ -112,7 +112,7 @@ const ImportData = () => {
           customer_phone: values[phoneIdx],
           customer_email: emailIdx !== -1 ? values[emailIdx] : undefined,
           course: courseIdx !== -1 ? values[courseIdx] : undefined,
-          fee: feeIdx !== -1 && values[feeIdx] ? parseFloat(values[feeIdx]) : undefined,
+          qualification: qualificationIdx !== -1 ? values[qualificationIdx] : undefined,
         });
       }
     }
@@ -146,7 +146,7 @@ const ImportData = () => {
       customer_phone: row.customer_phone,
       customer_email: row.customer_email || null,
       course: row.course || null,
-      fee: row.fee || null,
+      qualification: row.qualification || null,
       call_status: 'pending' as const,
     }));
 
@@ -188,8 +188,8 @@ const ImportData = () => {
                 <Upload className="w-5 h-5" />
                 Upload File
               </CardTitle>
-              <CardDescription>
-                Upload a CSV file with customer data. Required columns: name, phone
+            <CardDescription>
+                Upload a CSV file with columns: name, email, phone, course, qualification
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -285,10 +285,10 @@ const ImportData = () => {
                     <TableRow className="table-header">
                       <TableHead>#</TableHead>
                       <TableHead>Name</TableHead>
-                      <TableHead>Phone</TableHead>
                       <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
                       <TableHead>Course</TableHead>
-                      <TableHead>Fee</TableHead>
+                      <TableHead>Qualification</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -296,10 +296,10 @@ const ImportData = () => {
                       <TableRow key={idx}>
                         <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
                         <TableCell className="font-medium">{row.customer_name}</TableCell>
-                        <TableCell>{row.customer_phone}</TableCell>
                         <TableCell>{row.customer_email || '-'}</TableCell>
+                        <TableCell>{row.customer_phone}</TableCell>
                         <TableCell>{row.course || '-'}</TableCell>
-                        <TableCell>{row.fee ? `₹${row.fee.toLocaleString()}` : '-'}</TableCell>
+                        <TableCell>{row.qualification || '-'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

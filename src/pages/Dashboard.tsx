@@ -3,10 +3,12 @@ import { Sidebar } from '@/components/Sidebar';
 import { KPICard } from '@/components/KPICard';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Phone, ThumbsUp, ThumbsDown, Clock, Users, TrendingUp, PhoneCall } from 'lucide-react';
+import { Phone, ThumbsUp, ThumbsDown, Clock, Users, TrendingUp, PhoneCall, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { format, subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, parseISO, isToday } from 'date-fns';
+import { format, subDays, startOfDay, startOfWeek, endOfWeek, parseISO, isToday } from 'date-fns';
+import { toast } from 'sonner';
 
 interface DashboardData {
   totalCalls: number;
@@ -34,10 +36,18 @@ const Dashboard = () => {
     trendData: [],
   });
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchDashboardData();
+    setRefreshing(false);
+    toast.success('Dashboard data refreshed!');
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -149,13 +159,24 @@ const Dashboard = () => {
       
       <main className="ml-64 p-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold font-display text-foreground">
-            Welcome back, {profile?.full_name?.split(' ')[0] || 'User'}!
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Here's what's happening with your calls today.
-          </p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold font-display text-foreground">
+              Welcome back, {profile?.full_name?.split(' ')[0] || 'User'}!
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Here's what's happening with your calls today.
+            </p>
+          </div>
+          <Button 
+            onClick={handleRefresh} 
+            variant="outline" 
+            disabled={refreshing}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
         </div>
 
         {/* KPI Cards */}
