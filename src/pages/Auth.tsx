@@ -28,16 +28,12 @@ const Auth = () => {
   const [signupRole, setSignupRole] = useState<AppRole>('customer_caller');
 
   useEffect(() => {
-    if (!loading && user) {
-      // Wait a bit for role to be fetched, then redirect
-      const timer = setTimeout(() => {
-        if (role === 'customer_caller') {
-          navigate('/profile');
-        } else {
-          navigate('/dashboard');
-        }
-      }, 500);
-      return () => clearTimeout(timer);
+    if (!loading && user && role) {
+      if (role === 'customer_caller') {
+        navigate('/profile');
+      } else {
+        navigate('/dashboard');
+      }
     }
   }, [user, role, loading, navigate]);
 
