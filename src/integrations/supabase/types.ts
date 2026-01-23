@@ -75,7 +75,9 @@ export type Database = {
           employee_id: string
           full_name: string
           id: string
+          pan_number: string | null
           phone: string | null
+          photo_url: string | null
           updated_at: string
           user_id: string
         }
@@ -88,7 +90,9 @@ export type Database = {
           employee_id: string
           full_name: string
           id?: string
+          pan_number?: string | null
           phone?: string | null
+          photo_url?: string | null
           updated_at?: string
           user_id: string
         }
@@ -101,7 +105,84 @@ export type Database = {
           employee_id?: string
           full_name?: string
           id?: string
+          pan_number?: string | null
           phone?: string | null
+          photo_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      salary_records: {
+        Row: {
+          call_breakdown: Json
+          created_at: string
+          generated_at: string
+          generated_by: string | null
+          id: string
+          period_end: string
+          period_start: string
+          period_type: string
+          status: string
+          total_amount: number
+          total_calls: number
+          user_id: string
+        }
+        Insert: {
+          call_breakdown?: Json
+          created_at?: string
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          period_end: string
+          period_start: string
+          period_type: string
+          status?: string
+          total_amount?: number
+          total_calls?: number
+          user_id: string
+        }
+        Update: {
+          call_breakdown?: Json
+          created_at?: string
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          period_end?: string
+          period_start?: string
+          period_type?: string
+          status?: string
+          total_amount?: number
+          total_calls?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      salary_settings: {
+        Row: {
+          call_type: string
+          created_at: string
+          created_by: string | null
+          id: string
+          rate_per_call: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          call_type: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          rate_per_call?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          call_type?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          rate_per_call?: number
           updated_at?: string
           user_id?: string
         }

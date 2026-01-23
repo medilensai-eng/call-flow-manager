@@ -11,6 +11,8 @@ import CustomerCalling from "./pages/CustomerCalling";
 import ReCalling from "./pages/ReCalling";
 import TotalCalls from "./pages/TotalCalls";
 import Users from "./pages/Users";
+import UserKYC from "./pages/UserKYC";
+import SalarySlip from "./pages/SalarySlip";
 import ImportData from "./pages/ImportData";
 import Reports from "./pages/Reports";
 import SessionLogs from "./pages/SessionLogs";
@@ -47,6 +49,8 @@ const AppRoutes = () => {
       <Route path="/recalling" element={<ProtectedRoute><ReCalling /></ProtectedRoute>} />
       <Route path="/total-calls" element={<ProtectedRoute><TotalCalls /></ProtectedRoute>} />
       <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
+      <Route path="/kyc" element={<ProtectedRoute><UserKYC /></ProtectedRoute>} />
+      <Route path="/salary" element={<ProtectedRoute><SalarySlip /></ProtectedRoute>} />
       <Route path="/import" element={<ProtectedRoute><ImportData /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
       <Route path="/sessions" element={<ProtectedRoute><SessionLogs /></ProtectedRoute>} />
