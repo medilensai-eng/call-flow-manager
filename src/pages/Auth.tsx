@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Phone, Lock, Mail, Shield } from 'lucide-react';
+import { Lock, Mail } from 'lucide-react';
+import quizappLogo from '@/assets/quizapp-logo.png';
+import aspectVisionLogo from '@/assets/aspect-vision-logo.png';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -51,90 +53,130 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex bg-background">
-      {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 gradient-dark p-12 flex-col justify-between">
-        <div>
-          <h1 className="text-3xl font-bold font-display text-white">
-            <span className="text-primary">Tele</span>Caller
-          </h1>
-          <p className="text-white/60 mt-2">Management System</p>
-        </div>
-        
-        <div className="space-y-8">
-          <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-                <Phone className="w-6 h-6 text-primary" />
+    <div className="min-h-screen flex flex-col bg-background">
+      <div className="flex flex-1">
+        {/* Left Panel - Branding */}
+        <div className="hidden lg:flex lg:w-1/2 gradient-dark p-12 flex-col justify-between">
+          <div>
+            <h1 className="text-3xl font-bold font-display text-white">
+              <span className="text-primary">Tele</span>Caller
+            </h1>
+            <p className="text-white/60 mt-2">Management System</p>
+          </div>
+          
+          <div className="space-y-8">
+            <div className="text-center">
+              <p className="text-white/80 text-lg mb-6">A Collaboration Between</p>
+              <div className="flex items-center justify-center gap-8">
+                <div className="bg-white rounded-xl p-4 shadow-lg">
+                  <img 
+                    src={quizappLogo} 
+                    alt="QuizApp Logo" 
+                    className="h-24 w-auto object-contain"
+                  />
+                </div>
+                <div className="text-white text-3xl font-bold">&</div>
+                <div className="bg-white rounded-xl p-4 shadow-lg">
+                  <img 
+                    src={aspectVisionLogo} 
+                    alt="Aspect Vision EduTech Logo" 
+                    className="h-24 w-auto object-contain"
+                  />
+                </div>
               </div>
-              <div>
-                <h3 className="text-white font-medium">Efficient Call Management</h3>
-                <p className="text-white/60 text-sm">Track and manage all your calls in one place</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-success/20 flex items-center justify-center">
-                <Shield className="w-6 h-6 text-success" />
-              </div>
-              <div>
-                <h3 className="text-white font-medium">Role-Based Access</h3>
-                <p className="text-white/60 text-sm">Secure access control for all users</p>
-              </div>
+              <p className="text-white/60 mt-6 text-sm">
+                Aspect Vision EduTech PVT. LTD.
+              </p>
             </div>
           </div>
+
+          <div></div>
         </div>
 
-        <p className="text-white/40 text-sm">
-          © 2024 TeleCaller Management System
-        </p>
+        {/* Right Panel - Login Form */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+          <Card className="w-full max-w-md shadow-card border-0">
+            <CardHeader className="text-center pb-4">
+              {/* Mobile logos */}
+              <div className="lg:hidden flex items-center justify-center gap-4 mb-4">
+                <img 
+                  src={quizappLogo} 
+                  alt="QuizApp Logo" 
+                  className="h-16 w-auto object-contain"
+                />
+                <img 
+                  src={aspectVisionLogo} 
+                  alt="Aspect Vision EduTech Logo" 
+                  className="h-16 w-auto object-contain"
+                />
+              </div>
+              <CardTitle className="text-2xl font-display">Welcome Back</CardTitle>
+              <CardDescription>Sign in to your account</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="login-email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="login-password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="login-password"
+                      type="password"
+                      placeholder="Enter your password"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Signing in...' : 'Sign In'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      {/* Right Panel - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
-        <Card className="w-full max-w-md shadow-card border-0">
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-2xl font-display">Welcome Back</CardTitle>
-            <CardDescription>Sign in to your account</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="login-email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="login-email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="login-password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="login-password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Signing in...' : 'Sign In'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Footer */}
+      <footer className="bg-muted/50 border-t border-border py-4">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <img 
+                src={quizappLogo} 
+                alt="QuizApp" 
+                className="h-8 w-auto object-contain"
+              />
+              <span className="text-muted-foreground text-sm">×</span>
+              <img 
+                src={aspectVisionLogo} 
+                alt="Aspect Vision" 
+                className="h-8 w-auto object-contain"
+              />
+            </div>
+            <p className="text-muted-foreground text-sm text-center">
+              © {new Date().getFullYear()} QuizApp & Aspect Vision EduTech PVT. LTD. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
