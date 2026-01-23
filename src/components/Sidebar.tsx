@@ -12,7 +12,9 @@ import {
   PhoneCall,
   RotateCcw,
   History,
-  User
+  User,
+  FileCheck,
+  IndianRupee
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +30,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const adminLinks = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/users', label: 'Manage Users', icon: Users },
+    { to: '/kyc', label: 'KYC & Salary', icon: FileCheck },
+    { to: '/salary', label: 'Salary Slips', icon: IndianRupee },
     { to: '/import', label: 'Import Data', icon: Upload },
     { to: '/reports', label: 'Reports', icon: FileText },
     { to: '/sessions', label: 'Session Logs', icon: History },
@@ -36,6 +40,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const coAdminLinks = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/users', label: 'Manage Callers', icon: Users },
+    { to: '/kyc', label: 'KYC & Salary', icon: FileCheck },
+    { to: '/salary', label: 'Salary Slips', icon: IndianRupee },
     { to: '/import', label: 'Import Data', icon: Upload },
     { to: '/reports', label: 'Reports', icon: FileText },
   ];
