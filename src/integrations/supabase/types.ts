@@ -70,11 +70,13 @@ export type Database = {
           aadhaar_number: string | null
           address: string | null
           bank_account_number: string | null
+          bank_name: string | null
           created_at: string
           email: string
           employee_id: string
           full_name: string
           id: string
+          ifsc_code: string | null
           pan_number: string | null
           phone: string | null
           photo_url: string | null
@@ -85,11 +87,13 @@ export type Database = {
           aadhaar_number?: string | null
           address?: string | null
           bank_account_number?: string | null
+          bank_name?: string | null
           created_at?: string
           email: string
           employee_id: string
           full_name: string
           id?: string
+          ifsc_code?: string | null
           pan_number?: string | null
           phone?: string | null
           photo_url?: string | null
@@ -100,11 +104,13 @@ export type Database = {
           aadhaar_number?: string | null
           address?: string | null
           bank_account_number?: string | null
+          bank_name?: string | null
           created_at?: string
           email?: string
           employee_id?: string
           full_name?: string
           id?: string
+          ifsc_code?: string | null
           pan_number?: string | null
           phone?: string | null
           photo_url?: string | null
