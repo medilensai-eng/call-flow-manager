@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
+import { FaceMonitor } from '@/components/FaceMonitor';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Phone, Mail, BookOpen, DollarSign, ChevronLeft, ChevronRight, Send } from 'lucide-react';
@@ -149,13 +150,19 @@ const CustomerCalling = () => {
       
       <main className="ml-64 p-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold font-display text-foreground">Customer Calling</h1>
-          <p className="text-muted-foreground mt-1">
-            {customers.length > 0 
-              ? `${currentIndex + 1} of ${customers.length} pending calls`
-              : 'No pending calls'}
-          </p>
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold font-display text-foreground">Customer Calling</h1>
+            <p className="text-muted-foreground mt-1">
+              {customers.length > 0 
+                ? `${currentIndex + 1} of ${customers.length} pending calls`
+                : 'No pending calls'}
+            </p>
+          </div>
+          {/* Face Monitor - Top Right */}
+          <div className="w-72">
+            <FaceMonitor />
+          </div>
         </div>
 
         {customers.length === 0 ? (

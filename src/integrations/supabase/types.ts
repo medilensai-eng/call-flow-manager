@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      caller_streams: {
+        Row: {
+          face_detected: boolean
+          id: string
+          is_streaming: boolean
+          last_seen_at: string
+          stream_started_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          face_detected?: boolean
+          id?: string
+          is_streaming?: boolean
+          last_seen_at?: string
+          stream_started_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          face_detected?: boolean
+          id?: string
+          is_streaming?: boolean
+          last_seen_at?: string
+          stream_started_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       customer_data: {
         Row: {
           assigned_by: string | null
@@ -62,6 +92,36 @@ export type Database = {
           qualification?: string | null
           remark?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      face_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          id: string
+          is_active: boolean
+          resolved_at: string | null
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          alert_type?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          resolved_at?: string | null
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          resolved_at?: string | null
+          started_at?: string
+          user_id?: string
         }
         Relationships: []
       }

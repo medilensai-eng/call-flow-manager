@@ -14,7 +14,8 @@ import {
   History,
   User,
   FileCheck,
-  IndianRupee
+  IndianRupee,
+  Video
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,6 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
 
   const adminLinks = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/monitoring', label: 'Live Monitoring', icon: Video },
     { to: '/users', label: 'Manage Users', icon: Users },
     { to: '/kyc', label: 'KYC & Salary', icon: FileCheck },
     { to: '/salary', label: 'Salary Slips', icon: IndianRupee },
@@ -39,6 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
 
   const coAdminLinks = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/monitoring', label: 'Live Monitoring', icon: Video },
     { to: '/users', label: 'Manage Callers', icon: Users },
     { to: '/kyc', label: 'KYC & Salary', icon: FileCheck },
     { to: '/salary', label: 'Salary Slips', icon: IndianRupee },
