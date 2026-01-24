@@ -16,6 +16,7 @@ import SalarySlip from "./pages/SalarySlip";
 import ImportData from "./pages/ImportData";
 import Reports from "./pages/Reports";
 import SessionLogs from "./pages/SessionLogs";
+import LiveMonitoring from "./pages/LiveMonitoring";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const AppRoutes = () => {
       <Route path="/import" element={<ProtectedRoute><ImportData /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
       <Route path="/sessions" element={<ProtectedRoute><SessionLogs /></ProtectedRoute>} />
+      <Route path="/monitoring" element={<ProtectedRoute><LiveMonitoring /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
