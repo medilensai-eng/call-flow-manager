@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { UserPlus, Users as UsersIcon, Edit, Trash2, Eye } from 'lucide-react';
+import { UserPlus, Users as UsersIcon, Edit, Trash2, Eye, RotateCcw, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 
 type AppRole = 'admin' | 'co_admin' | 'customer_caller';
@@ -32,6 +33,8 @@ const Users = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [selectedUserForReset, setSelectedUserForReset] = useState<UserWithRole | null>(null);
 
   // Form state
   const [newUserName, setNewUserName] = useState('');
@@ -104,6 +107,62 @@ const Users = () => {
     }
 
     setIsCreating(false);
+  };
+
+  const handleResetUserData = async (user: UserWithRole) => {
+    if (currentUserRole !== 'admin') {
+      toast.error('Only admins can reset user data');
+      return;
+    }
+
+    setIsResetting(true);
+
+    try {
+      // Delete customer_data assigned to this user
+      const { error: customerDataError } = await supabase
+        .from('customer_data')
+        .delete()
+        .eq('assigned_to', user.user_id);
+
+      if (customerDataError) throw customerDataError;
+
+      // Delete face_alerts for this user
+      const { error: faceAlertsError } = await supabase
+        .from('face_alerts')
+        .delete()
+        .eq('user_id', user.user_id);
+
+      if (faceAlertsError) throw faceAlertsError;
+
+      // Delete caller_streams for this user
+      const { error: callerStreamsError } = await supabase
+        .from('caller_streams')
+        .delete()
+        .eq('user_id', user.user_id);
+
+      if (callerStreamsError) throw callerStreamsError;
+
+      // Delete session_logs for this user
+      const { error: sessionLogsError } = await supabase
+        .from('session_logs')
+        .delete()
+        .eq('user_id', user.user_id);
+
+      if (sessionLogsError) throw sessionLogsError;
+
+      // Note: We keep profiles, user_roles, salary_records, and salary_settings
+
+      toast.success(`All data reset for ${user.full_name}`, {
+        description: 'Profile, account, and salary records preserved',
+      });
+      
+      setSelectedUserForReset(null);
+    } catch (error: any) {
+      console.error('Error resetting user data:', error);
+      toast.error('Failed to reset user data');
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   const getRoleBadgeClass = (role: AppRole) => {
@@ -275,6 +334,7 @@ const Users = () => {
                     <TableHead>Phone</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Created</TableHead>
+                    {currentUserRole === 'admin' && <TableHead>Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -292,6 +352,60 @@ const Users = () => {
                       <TableCell>
                         {format(new Date(user.created_at), 'MMM dd, yyyy')}
                       </TableCell>
+                      {currentUserRole === 'admin' && (
+                        <TableCell>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                onClick={() => setSelectedUserForReset(user)}
+                              >
+                                <RotateCcw className="w-4 h-4 mr-1" />
+                                Reset Data
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="flex items-center gap-2">
+                                  <AlertTriangle className="w-5 h-5 text-orange-500" />
+                                  Reset User Data
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="space-y-3">
+                                  <p>
+                                    This will delete all data for <strong>{user.full_name}</strong> except:
+                                  </p>
+                                  <ul className="list-disc list-inside text-sm space-y-1">
+                                    <li>User account & login credentials</li>
+                                    <li>Profile details (KYC, bank info, photo)</li>
+                                    <li>Salary records & settings</li>
+                                  </ul>
+                                  <p className="text-destructive font-medium">
+                                    The following will be permanently deleted:
+                                  </p>
+                                  <ul className="list-disc list-inside text-sm space-y-1 text-destructive">
+                                    <li>Customer data assigned to this user</li>
+                                    <li>Face detection alerts</li>
+                                    <li>Session logs</li>
+                                    <li>Caller stream data</li>
+                                  </ul>
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleResetUserData(user)}
+                                  disabled={isResetting}
+                                  className="bg-orange-600 hover:bg-orange-700"
+                                >
+                                  {isResetting ? 'Resetting...' : 'Reset Data'}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
