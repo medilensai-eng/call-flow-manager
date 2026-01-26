@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sidebar } from '@/components/Sidebar';
+import { DashboardLayout } from '@/components/DashboardLayout';
 import { KPICard } from '@/components/KPICard';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -144,151 +144,77 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Sidebar />
-        <main className="ml-64 p-8 flex items-center justify-center">
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </main>
-      </div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar />
-      
-      <main className="ml-64 p-8">
-        {/* Header */}
-        <div className="mb-8 flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold font-display text-foreground">
-              Welcome back, {profile?.full_name?.split(' ')[0] || 'User'}!
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Here's what's happening with your calls today.
-            </p>
-          </div>
-          <Button 
-            onClick={handleRefresh} 
-            variant="outline" 
-            disabled={refreshing}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Refreshing...' : 'Refresh'}
-          </Button>
+    <DashboardLayout>
+      {/* Header */}
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold font-display text-foreground">
+            Welcome back, {profile?.full_name?.split(' ')[0] || 'User'}!
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Here's what's happening with your calls today.
+          </p>
         </div>
+        <Button 
+          onClick={handleRefresh} 
+          variant="outline" 
+          disabled={refreshing}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          {refreshing ? 'Refreshing...' : 'Refresh'}
+        </Button>
+      </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <KPICard
-            title="Total Calls"
-            value={data.totalCalls.toLocaleString()}
-            icon={Phone}
-            variant="primary"
-          />
-          <KPICard
-            title="Interested"
-            value={data.interested.toLocaleString()}
-            icon={ThumbsUp}
-            variant="success"
-          />
-          <KPICard
-            title="Not Interested"
-            value={data.notInterested.toLocaleString()}
-            icon={ThumbsDown}
-            variant="destructive"
-          />
-          <KPICard
-            title="Pending"
-            value={data.pending.toLocaleString()}
-            icon={Clock}
-            variant="warning"
-          />
-        </div>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <KPICard
+          title="Total Calls"
+          value={data.totalCalls.toLocaleString()}
+          icon={Phone}
+          variant="primary"
+        />
+        <KPICard
+          title="Interested"
+          value={data.interested.toLocaleString()}
+          icon={ThumbsUp}
+          variant="success"
+        />
+        <KPICard
+          title="Not Interested"
+          value={data.notInterested.toLocaleString()}
+          icon={ThumbsDown}
+          variant="destructive"
+        />
+        <KPICard
+          title="Pending"
+          value={data.pending.toLocaleString()}
+          icon={Clock}
+          variant="warning"
+        />
+      </div>
 
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Bar Chart */}
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle className="font-display text-lg">Weekly Call Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={data.weeklyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
-                  <YAxis stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Bar dataKey="calls" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Total Calls" />
-                  <Bar dataKey="interested" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} name="Interested" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Pie Chart */}
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle className="font-display text-lg">Call Status Distribution</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex justify-center gap-6 mt-4">
-                {pieData.map((item) => (
-                  <div key={item.name} className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="text-sm text-muted-foreground">{item.name}: {item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Trend Chart */}
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Bar Chart */}
         <Card className="shadow-card">
           <CardHeader>
-            <CardTitle className="font-display text-lg">Monthly Trend</CardTitle>
+            <CardTitle className="font-display text-lg">Weekly Call Activity</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={data.trendData}>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={data.weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
                 <YAxis stroke="hsl(var(--muted-foreground))" />
                 <Tooltip 
                   contentStyle={{ 
@@ -297,65 +223,134 @@ const Dashboard = () => {
                     borderRadius: '8px'
                   }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="calls" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={3}
-                  dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2 }}
-                  name="Total Calls"
-                />
-              </LineChart>
+                <Bar dataKey="calls" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Total Calls" />
+                <Bar dataKey="interested" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} name="Interested" />
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Admin Only - Quick Stats */}
-        {role === 'admin' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-            <Card className="shadow-card">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-primary/10">
-                    <Users className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold font-display">{data.activeCallers}</p>
-                    <p className="text-sm text-muted-foreground">Active Callers Today</p>
-                  </div>
+        {/* Pie Chart */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="font-display text-lg">Call Status Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex justify-center gap-6 mt-4">
+              {pieData.map((item) => (
+                <div key={item.name} className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="text-sm text-muted-foreground">{item.name}: {item.value}</span>
                 </div>
-              </CardContent>
-            </Card>
-            <Card className="shadow-card">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-success/10">
-                    <TrendingUp className="h-6 w-6 text-success" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold font-display">{data.conversionRate.toFixed(1)}%</p>
-                    <p className="text-sm text-muted-foreground">Conversion Rate</p>
-                  </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Trend Chart */}
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="font-display text-lg">Monthly Trend</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={data.trendData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+              <YAxis stroke="hsl(var(--muted-foreground))" />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px'
+                }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="calls" 
+                stroke="hsl(var(--primary))" 
+                strokeWidth={3}
+                dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2 }}
+                name="Total Calls"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Admin Only - Quick Stats */}
+      {role === 'admin' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+          <Card className="shadow-card">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-primary/10">
+                  <Users className="h-6 w-6 text-primary" />
                 </div>
-              </CardContent>
-            </Card>
-            <Card className="shadow-card">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-accent/10">
-                    <PhoneCall className="h-6 w-6 text-accent" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold font-display">{data.callsToday}</p>
-                    <p className="text-sm text-muted-foreground">Calls Today</p>
-                  </div>
+                <div>
+                  <p className="text-2xl font-bold font-display">{data.activeCallers}</p>
+                  <p className="text-sm text-muted-foreground">Active Callers Today</p>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </main>
-    </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="shadow-card">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-success/10">
+                  <TrendingUp className="h-6 w-6 text-success" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold font-display">{data.conversionRate.toFixed(1)}%</p>
+                  <p className="text-sm text-muted-foreground">Conversion Rate</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="shadow-card">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-accent/10">
+                  <PhoneCall className="h-6 w-6 text-accent" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold font-display">{data.callsToday}</p>
+                  <p className="text-sm text-muted-foreground">Calls Today</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </DashboardLayout>
   );
 };
 

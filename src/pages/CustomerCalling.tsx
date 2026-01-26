@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sidebar } from '@/components/Sidebar';
+import { DashboardLayout } from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -135,20 +135,16 @@ const CustomerCalling = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Sidebar />
-        <main className="ml-64 p-8 flex items-center justify-center">
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </main>
-      </div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar />
-      
-      <main className="ml-64 p-8">
+    <DashboardLayout>
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
           <div>
@@ -297,8 +293,7 @@ const CustomerCalling = () => {
             </Card>
           </div>
         )}
-      </main>
-    </div>
+    </DashboardLayout>
   );
 };
 
