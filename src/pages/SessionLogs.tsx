@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sidebar } from '@/components/Sidebar';
+import { DashboardLayout } from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -78,10 +78,7 @@ const SessionLogs = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar />
-      
-      <main className="ml-64 p-8">
+    <DashboardLayout>
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold font-display text-foreground">Session Logs</h1>
@@ -168,8 +165,7 @@ const SessionLogs = () => {
             )}
           </CardContent>
         </Card>
-      </main>
-    </div>
+    </DashboardLayout>
   );
 };
 
