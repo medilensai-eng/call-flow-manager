@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import { Sidebar } from '@/components/Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -178,7 +178,10 @@ const Reports = () => {
   };
 
   return (
-    <DashboardLayout>
+    <div className="min-h-screen bg-background">
+      <Sidebar />
+      
+      <main className="ml-64 p-8">
         {/* Header */}
         <div className="flex justify-between items-start mb-8">
           <div>
@@ -353,7 +356,8 @@ const Reports = () => {
             )}
           </CardContent>
         </Card>
-    </DashboardLayout>
+      </main>
+    </div>
   );
 };
 

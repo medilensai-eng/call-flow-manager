@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import { Sidebar } from '@/components/Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -137,7 +137,10 @@ const ReCalling = () => {
   };
 
   return (
-    <DashboardLayout>
+    <div className="min-h-screen bg-background">
+      <Sidebar />
+      
+      <main className="ml-64 p-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold font-display text-foreground">Re-Calling</h1>
@@ -303,7 +306,8 @@ const ReCalling = () => {
             )}
           </CardContent>
         </Card>
-    </DashboardLayout>
+      </main>
+    </div>
   );
 };
 

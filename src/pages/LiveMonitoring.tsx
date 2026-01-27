@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import { Sidebar } from '@/components/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -437,22 +437,29 @@ const LiveMonitoring = () => {
 
   if (role !== 'admin' && role !== 'co_admin') {
     return (
-      <DashboardLayout>
-        <div className="text-center py-12">
-          <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-4" />
-          <h2 className="text-xl font-semibold">Access Denied</h2>
-          <p className="text-muted-foreground">You don't have permission to view this page.</p>
-        </div>
-      </DashboardLayout>
+      <div className="min-h-screen bg-background">
+        <Sidebar />
+        <main className="ml-64 p-8">
+          <div className="text-center py-12">
+            <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-4" />
+            <h2 className="text-xl font-semibold">Access Denied</h2>
+            <p className="text-muted-foreground">You don't have permission to view this page.</p>
+          </div>
+        </main>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
+    <div className="min-h-screen bg-background">
+      <Sidebar />
+      
       {/* Alert Sound */}
       <audio ref={audioRef} preload="auto">
         <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg" />
       </audio>
+      
+      <main className="ml-64 p-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>

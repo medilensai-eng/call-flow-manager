@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import { Sidebar } from '@/components/Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -170,7 +170,10 @@ const ImportData = () => {
   };
 
   return (
-    <DashboardLayout>
+    <div className="min-h-screen bg-background">
+      <Sidebar />
+      
+      <main className="ml-64 p-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold font-display text-foreground">Import Data</h1>
@@ -310,7 +313,8 @@ const ImportData = () => {
             </CardContent>
           </Card>
         )}
-    </DashboardLayout>
+      </main>
+    </div>
   );
 };
 

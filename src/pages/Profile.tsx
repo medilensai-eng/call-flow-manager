@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import { Sidebar } from '@/components/Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -110,7 +110,10 @@ const Profile = () => {
   };
 
   return (
-    <DashboardLayout>
+    <div className="min-h-screen bg-background">
+      <Sidebar />
+      
+      <main className="ml-64 p-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold font-display text-foreground">My Profile</h1>
@@ -346,7 +349,8 @@ const Profile = () => {
             </CardContent>
           </Card>
         </div>
-    </DashboardLayout>
+      </main>
+    </div>
   );
 };
 
