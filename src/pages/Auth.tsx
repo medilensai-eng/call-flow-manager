@@ -66,15 +66,9 @@ const Auth = () => {
           
           <div className="space-y-8">
             <div className="text-center">
-              <p className="text-white/80 text-lg mb-6">A Collaboration Between</p>
+              <p className="text-white/80 text-lg mb-6">Aspect Vision</p>
               <div className="flex items-center justify-center gap-8">
-                <div className="bg-white rounded-xl p-4 shadow-lg">
-                  <img 
-                    src={quizappLogo} 
-                    alt="QuizApp Logo" 
-                    className="h-24 w-auto object-contain"
-                  />
-                </div>
+               
                 <div className="text-white text-3xl font-bold">&</div>
                 <div className="bg-white rounded-xl p-4 shadow-lg">
                   <img 
@@ -99,11 +93,7 @@ const Auth = () => {
             <CardHeader className="text-center pb-4">
               {/* Mobile logos */}
               <div className="lg:hidden flex items-center justify-center gap-4 mb-4">
-                <img 
-                  src={quizappLogo} 
-                  alt="QuizApp Logo" 
-                  className="h-16 w-auto object-contain"
-                />
+               
                 <img 
                   src={aspectVisionLogo} 
                   alt="Aspect Vision EduTech Logo" 
