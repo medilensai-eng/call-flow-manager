@@ -68,7 +68,6 @@ const Auth = () => {
             <div className="text-center">
               <p className="text-white/80 text-lg mb-6">A Collaboration Between</p>
               <div className="flex items-center justify-center gap-8">
-                <div className="text-white text-3xl font-bold">&</div>
                 <div className="bg-white rounded-xl p-4 shadow-lg">
                   <img
                     src={aspectVisionLogo}
