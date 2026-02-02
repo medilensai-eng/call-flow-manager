@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sidebar } from '@/components/Sidebar';
+import { DashboardLayout } from '@/components/DashboardLayout';
 import { KPICard } from '@/components/KPICard';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -144,20 +144,16 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Sidebar />
-        <main className="ml-64 p-8 flex items-center justify-center">
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </main>
-      </div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar />
-      
-      <main className="ml-64 p-8">
+    <DashboardLayout>
         {/* Header */}
         <div className="mb-8 flex items-start justify-between">
           <div>
@@ -354,8 +350,7 @@ const Dashboard = () => {
             </Card>
           </div>
         )}
-      </main>
-    </div>
+    </DashboardLayout>
   );
 };
 
