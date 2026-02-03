@@ -8,9 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
 import { FaceMonitor } from '@/components/FaceMonitor';
+import { SimStatus } from '@/components/SimStatus';
+import { DialerPopup } from '@/components/DialerPopup';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Phone, Mail, BookOpen, DollarSign, ChevronLeft, ChevronRight, Send } from 'lucide-react';
+import { Phone, Mail, BookOpen, DollarSign, ChevronLeft, ChevronRight, Send, PhoneCall } from 'lucide-react';
 
 type CallStatus = 
   | 'pending'
@@ -51,6 +53,7 @@ const CustomerCalling = () => {
   const [remark, setRemark] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isDialerOpen, setIsDialerOpen] = useState(false);
 
   const fetchCustomers = async () => {
     if (!user) return;
@@ -146,8 +149,8 @@ const CustomerCalling = () => {
   return (
     <DashboardLayout>
         {/* Header */}
-        <div className="flex items-start justify-between mb-8">
-          <div>
+        <div className="flex flex-col lg:flex-row items-start justify-between gap-4 mb-8">
+          <div className="flex-1">
             <h1 className="text-3xl font-bold font-display text-foreground">Customer Calling</h1>
             <p className="text-muted-foreground mt-1">
               {customers.length > 0 
@@ -155,9 +158,13 @@ const CustomerCalling = () => {
                 : 'No pending calls'}
             </p>
           </div>
-          {/* Face Monitor - Top Right */}
-          <div className="w-72">
-            <FaceMonitor />
+          
+          {/* SIM Status & Face Monitor */}
+          <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+            <SimStatus className="w-full sm:w-64" />
+            <div className="w-full sm:w-72">
+              <FaceMonitor />
+            </div>
           </div>
         </div>
 
@@ -191,7 +198,18 @@ const CustomerCalling = () => {
                     <Label className="text-muted-foreground text-xs uppercase tracking-wide flex items-center gap-1">
                       <Phone className="w-3 h-3" /> Phone
                     </Label>
-                    <p className="font-medium">{currentCustomer.customer_phone}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{currentCustomer.customer_phone}</p>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="h-7 px-3 bg-green-500 hover:bg-green-600"
+                        onClick={() => setIsDialerOpen(true)}
+                      >
+                        <PhoneCall className="w-3 h-3 mr-1" />
+                        Call Now
+                      </Button>
+                    </div>
                   </div>
                   {currentCustomer.customer_email && (
                     <div className="space-y-1">
@@ -292,6 +310,16 @@ const CustomerCalling = () => {
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {/* Dialer Popup */}
+        {currentCustomer && (
+          <DialerPopup
+            isOpen={isDialerOpen}
+            onClose={() => setIsDialerOpen(false)}
+            phoneNumber={currentCustomer.customer_phone}
+            customerName={currentCustomer.customer_name}
+          />
         )}
     </DashboardLayout>
   );
