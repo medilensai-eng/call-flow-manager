@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Smartphone, Signal, SignalZero, RefreshCw } from 'lucide-react';
+import { Smartphone, Wifi, WifiOff, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -9,26 +9,61 @@ interface SimStatusProps {
   className?: string;
 }
 
+type ConnectionType = 'sim' | 'wifi' | 'none';
+
 export const SimStatus = ({ className }: SimStatusProps) => {
-  const [isConnected, setIsConnected] = useState(false);
-  const [signalStrength, setSignalStrength] = useState(0);
+  const [connectionType, setConnectionType] = useState<ConnectionType>('none');
   const [isChecking, setIsChecking] = useState(false);
+  const [wifiConnected, setWifiConnected] = useState(false);
 
   const checkConnectivity = async () => {
     setIsChecking(true);
     
-    // Simulate connectivity check
+    // Simulate system scan for SIM detection
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Check network connection type
+    const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+    
+    if (connection) {
+      const type = connection.effectiveType || connection.type;
+      // Check if it's cellular/mobile data (indicates SIM)
+      if (connection.type === 'cellular' || type === '4g' || type === '3g' || type === '2g') {
+        setConnectionType('sim');
+      } else if (navigator.onLine) {
+        // Online but not cellular - likely WiFi
+        setConnectionType('wifi');
+        setWifiConnected(true);
+      } else {
+        setConnectionType('none');
+      }
+    } else {
+      // Fallback: just check if online
+      if (navigator.onLine) {
+        // Simulate SIM check - in real app this would use native APIs
+        // For demo, randomly determine if SIM is present
+        const hasSim = Math.random() > 0.5;
+        if (hasSim) {
+          setConnectionType('sim');
+        } else {
+          setConnectionType('wifi');
+          setWifiConnected(true);
+        }
+      } else {
+        setConnectionType('none');
+      }
+    }
+    
+    setIsChecking(false);
+  };
+
+  const connectWifiCalling = async () => {
+    setIsChecking(true);
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Check network status
-    const online = navigator.onLine;
-    setIsConnected(online);
-    
-    // Simulate signal strength (1-4 bars)
-    if (online) {
-      setSignalStrength(Math.floor(Math.random() * 3) + 2); // 2-4 bars
-    } else {
-      setSignalStrength(0);
+    if (navigator.onLine) {
+      setWifiConnected(true);
+      setConnectionType('wifi');
     }
     
     setIsChecking(false);
@@ -37,7 +72,6 @@ export const SimStatus = ({ className }: SimStatusProps) => {
   useEffect(() => {
     checkConnectivity();
     
-    // Listen for online/offline events
     window.addEventListener('online', checkConnectivity);
     window.addEventListener('offline', checkConnectivity);
     
@@ -47,74 +81,67 @@ export const SimStatus = ({ className }: SimStatusProps) => {
     };
   }, []);
 
-  const getSignalBars = () => {
-    const bars = [];
-    for (let i = 1; i <= 4; i++) {
-      bars.push(
-        <div
-          key={i}
-          className={cn(
-            "w-1 rounded-sm transition-colors",
-            i <= signalStrength ? "bg-green-500" : "bg-muted",
-            i === 1 && "h-1",
-            i === 2 && "h-2",
-            i === 3 && "h-3",
-            i === 4 && "h-4"
-          )}
-        />
-      );
-    }
-    return bars;
-  };
+  const isConnected = connectionType !== 'none';
 
   return (
     <Card className={cn("shadow-card", className)}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <CardContent className="p-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            {/* Connection Icon */}
             <div className={cn(
-              "p-2 rounded-full",
+              "p-1.5 rounded-full",
               isConnected ? "bg-green-500/10" : "bg-destructive/10"
             )}>
-              <Smartphone className={cn(
-                "w-5 h-5",
-                isConnected ? "text-green-500" : "text-destructive"
-              )} />
+              {connectionType === 'sim' ? (
+                <Smartphone className="w-4 h-4 text-green-500" />
+              ) : connectionType === 'wifi' ? (
+                <Wifi className="w-4 h-4 text-green-500" />
+              ) : (
+                <WifiOff className="w-4 h-4 text-destructive" />
+              )}
             </div>
             
-            <div>
-              <p className="font-medium text-sm">SIM Status</p>
-              <div className="flex items-center gap-2">
-                <Badge 
-                  variant={isConnected ? "default" : "destructive"}
-                  className={cn(
-                    "text-xs",
-                    isConnected && "bg-green-500 hover:bg-green-600"
-                  )}
-                >
-                  {isConnected ? "Connected" : "Not Connected"}
-                </Badge>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                {isConnected ? (
+                  <CheckCircle className="w-3 h-3 text-green-500" />
+                ) : (
+                  <XCircle className="w-3 h-3 text-destructive" />
+                )}
+                <span className="text-xs font-medium">
+                  {connectionType === 'sim' && 'SIM Connected'}
+                  {connectionType === 'wifi' && 'WiFi Calling'}
+                  {connectionType === 'none' && 'Not Connected'}
+                </span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Signal Strength Indicator */}
-            <div className="flex items-end gap-0.5 h-4">
-              {isConnected ? getSignalBars() : (
-                <SignalZero className="w-4 h-4 text-destructive" />
-              )}
-            </div>
+          <div className="flex items-center gap-1">
+            {/* WiFi Calling Button - show when no SIM */}
+            {connectionType !== 'sim' && !wifiConnected && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={connectWifiCalling}
+                disabled={isChecking}
+                className="h-7 text-xs px-2"
+              >
+                <Wifi className="w-3 h-3 mr-1" />
+                WiFi Call
+              </Button>
+            )}
 
             <Button
               variant="ghost"
               size="icon"
               onClick={checkConnectivity}
               disabled={isChecking}
-              className="h-8 w-8"
+              className="h-7 w-7"
             >
               <RefreshCw className={cn(
-                "w-4 h-4",
+                "w-3 h-3",
                 isChecking && "animate-spin"
               )} />
             </Button>
