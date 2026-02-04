@@ -17,6 +17,8 @@ import ImportData from "./pages/ImportData";
 import Reports from "./pages/Reports";
 import SessionLogs from "./pages/SessionLogs";
 import LiveMonitoring from "./pages/LiveMonitoring";
+import PhoneConnect from "./pages/PhoneConnect";
+import CallRecordings from "./pages/CallRecordings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +58,8 @@ const AppRoutes = () => {
       <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
       <Route path="/sessions" element={<ProtectedRoute><SessionLogs /></ProtectedRoute>} />
       <Route path="/monitoring" element={<ProtectedRoute><LiveMonitoring /></ProtectedRoute>} />
+      <Route path="/recordings" element={<ProtectedRoute><CallRecordings /></ProtectedRoute>} />
+      <Route path="/phone-connect" element={<PhoneConnect />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

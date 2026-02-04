@@ -5,6 +5,7 @@ import {
   Users, 
   Phone, 
   FileText, 
+  Mic,
   LogOut,
   Upload,
   PhoneCall,
@@ -43,6 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const adminLinks = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/monitoring', label: 'Live Monitoring', icon: Video },
+    { to: '/recordings', label: 'Call Recordings', icon: Mic },
     { to: '/users', label: 'Manage Users', icon: Users },
     { to: '/kyc', label: 'KYC & Salary', icon: FileCheck },
     { to: '/salary', label: 'Salary Slips', icon: IndianRupee },
@@ -54,6 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const coAdminLinks = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/monitoring', label: 'Live Monitoring', icon: Video },
+    { to: '/recordings', label: 'Call Recordings', icon: Mic },
     { to: '/users', label: 'Manage Callers', icon: Users },
     { to: '/kyc', label: 'KYC & Salary', icon: FileCheck },
     { to: '/salary', label: 'Salary Slips', icon: IndianRupee },
@@ -66,6 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { to: '/calling', label: 'Customer Calling', icon: Phone },
     { to: '/recalling', label: 'Re-Calling', icon: RotateCcw },
     { to: '/total-calls', label: 'Total Calling', icon: PhoneCall },
+    { to: '/recordings', label: 'My Recordings', icon: Mic },
   ];
 
   const links = role === 'admin' ? adminLinks : role === 'co_admin' ? coAdminLinks : callerLinks;

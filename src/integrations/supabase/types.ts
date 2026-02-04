@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      call_recordings: {
+        Row: {
+          call_status: string | null
+          call_type: string
+          created_at: string
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          recording_size_bytes: number | null
+          recording_url: string | null
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          call_status?: string | null
+          call_type: string
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          recording_size_bytes?: number | null
+          recording_url?: string | null
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          call_status?: string | null
+          call_type?: string
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          recording_size_bytes?: number | null
+          recording_url?: string | null
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_recordings_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       caller_streams: {
         Row: {
           face_detected: boolean
@@ -149,6 +205,39 @@ export type Database = {
           id?: string
           is_active?: boolean
           message?: string
+        }
+        Relationships: []
+      }
+      phone_connections: {
+        Row: {
+          connected_at: string | null
+          connection_code: string
+          created_at: string
+          id: string
+          is_connected: boolean | null
+          last_seen_at: string | null
+          phone_info: Json | null
+          user_id: string
+        }
+        Insert: {
+          connected_at?: string | null
+          connection_code: string
+          created_at?: string
+          id?: string
+          is_connected?: boolean | null
+          last_seen_at?: string | null
+          phone_info?: Json | null
+          user_id: string
+        }
+        Update: {
+          connected_at?: string | null
+          connection_code?: string
+          created_at?: string
+          id?: string
+          is_connected?: boolean | null
+          last_seen_at?: string | null
+          phone_info?: Json | null
+          user_id?: string
         }
         Relationships: []
       }

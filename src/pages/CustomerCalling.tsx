@@ -8,8 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
 import { FaceMonitor } from '@/components/FaceMonitor';
-import { SimStatus } from '@/components/SimStatus';
-import { DialerPopup } from '@/components/DialerPopup';
+import { PhoneConnectionQR } from '@/components/PhoneConnectionQR';
+import { PhoneDialer } from '@/components/PhoneDialer';
+import { usePhoneConnection } from '@/hooks/usePhoneConnection';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Phone, Mail, BookOpen, DollarSign, ChevronLeft, ChevronRight, Send, PhoneCall } from 'lucide-react';
@@ -54,6 +55,7 @@ const CustomerCalling = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isDialerOpen, setIsDialerOpen] = useState(false);
+  const { connection, isConnected: isPhoneConnected } = usePhoneConnection();
 
   const fetchCustomers = async () => {
     if (!user) return;
@@ -159,12 +161,9 @@ const CustomerCalling = () => {
             </p>
           </div>
           
-          {/* SIM Status & Face Monitor */}
-          <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-            <SimStatus className="w-full sm:w-64" />
-            <div className="w-full sm:w-72">
-              <FaceMonitor />
-            </div>
+          {/* Face Monitor */}
+          <div className="w-full sm:w-72 lg:w-auto">
+            <FaceMonitor />
           </div>
         </div>
 
@@ -179,8 +178,13 @@ const CustomerCalling = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Customer Details */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Phone Connection QR */}
+            <div className="lg:col-span-1">
+              <PhoneConnectionQR />
+            </div>
+            {/* Customer Details & Call Form */}
+            <div className="lg:col-span-2 space-y-6">
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle className="font-display flex items-center justify-between">
@@ -309,16 +313,20 @@ const CustomerCalling = () => {
                 </Button>
               </CardContent>
             </Card>
+            </div>
           </div>
         )}
 
         {/* Dialer Popup */}
         {currentCustomer && (
-          <DialerPopup
+          <PhoneDialer
             isOpen={isDialerOpen}
             onClose={() => setIsDialerOpen(false)}
             phoneNumber={currentCustomer.customer_phone}
             customerName={currentCustomer.customer_name}
+            customerId={currentCustomer.id}
+            connectionId={connection?.id || null}
+            isPhoneConnected={isPhoneConnected}
           />
         )}
     </DashboardLayout>
