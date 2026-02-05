@@ -20,14 +20,17 @@ import {
   XCircle,
   PhoneIncoming,
   PhoneOutgoing,
-  Volume2
+  Volume2,
+  PhoneMissed,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'in_call';
+type CallDirection = 'incoming' | 'outgoing';
 
 interface CallInfo {
-  type: 'incoming' | 'outgoing';
+  type: CallDirection;
   customerName: string;
   customerPhone: string;
   customerId?: string;
@@ -41,15 +44,19 @@ const PhoneConnect = () => {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [manualCode, setManualCode] = useState('');
   const [connectionId, setConnectionId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [callInfo, setCallInfo] = useState<CallInfo | null>(null);
   const [callDuration, setCallDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
+  const [showDialPad, setShowDialPad] = useState(false);
+  const [dialNumber, setDialNumber] = useState('');
   
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const keepAliveRef = useRef<NodeJS.Timeout | null>(null);
 
   // Connect using code
   const connect = async (connectionCode: string) => {
@@ -94,11 +101,15 @@ const PhoneConnect = () => {
       }
 
       setConnectionId(data.id);
+      setUserId(data.user_id);
       setConnectionStatus('connected');
       toast.success('Connected to PC!');
 
       // Subscribe to call events
       subscribeToEvents(data.id, data.user_id);
+
+      // Start keep-alive ping immediately
+      startKeepAlive(data.id);
 
       // Request microphone access
       try {
@@ -116,6 +127,22 @@ const PhoneConnect = () => {
     }
   };
 
+  // Start keep-alive ping
+  const startKeepAlive = (connId: string) => {
+    // Clear any existing interval
+    if (keepAliveRef.current) {
+      clearInterval(keepAliveRef.current);
+    }
+    
+    // Ping every 15 seconds
+    keepAliveRef.current = setInterval(async () => {
+      await supabase
+        .from('phone_connections')
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq('id', connId);
+    }, 15000);
+  };
+
   // Subscribe to realtime events from PC
   const subscribeToEvents = (connId: string, userId: string) => {
     const channel = supabase.channel(`phone-call:${connId}`, {
@@ -125,6 +152,10 @@ const PhoneConnect = () => {
     channel
       .on('broadcast', { event: 'start-call' }, ({ payload }) => {
         console.log('Received call request:', payload);
+        // Vibrate to notify user
+        if (navigator.vibrate) {
+          navigator.vibrate([200, 100, 200]);
+        }
         setCallInfo({
           type: payload.type || 'outgoing',
           customerName: payload.customerName,
@@ -138,6 +169,10 @@ const PhoneConnect = () => {
         durationIntervalRef.current = setInterval(() => {
           setCallDuration(prev => prev + 1);
         }, 1000);
+
+        toast.success(`Call to ${payload.customerName}`, {
+          description: 'Use your phone dialer to make the call',
+        });
       })
       .on('broadcast', { event: 'end-call' }, () => {
         console.log('Call ended by PC');
@@ -179,6 +214,9 @@ const PhoneConnect = () => {
     if (durationIntervalRef.current) {
       clearInterval(durationIntervalRef.current);
     }
+    if (keepAliveRef.current) {
+      clearInterval(keepAliveRef.current);
+    }
 
     if (connectionId) {
       await supabase
@@ -203,6 +241,46 @@ const PhoneConnect = () => {
     setConnectionId(null);
     setCallInfo(null);
     toast.info('Disconnected from PC');
+  };
+
+  // Initiate incoming call (from phone to PC)
+  const initiateIncomingCall = (callerName: string, callerPhone: string) => {
+    if (!channelRef.current) return;
+    
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'incoming-call',
+      payload: {
+        callerName,
+        callerPhone,
+        direction: 'incoming',
+      },
+    });
+
+    setCallInfo({
+      type: 'incoming',
+      customerName: callerName,
+      customerPhone: callerPhone,
+    });
+    setConnectionStatus('in_call');
+    setCallDuration(0);
+    
+    // Start duration timer
+    durationIntervalRef.current = setInterval(() => {
+      setCallDuration(prev => prev + 1);
+    }, 1000);
+  };
+
+  // Quick dial from phone
+  const handleQuickDial = () => {
+    if (!dialNumber.trim()) {
+      toast.error('Enter a phone number');
+      return;
+    }
+    
+    initiateIncomingCall('Unknown Caller', dialNumber);
+    setShowDialPad(false);
+    setDialNumber('');
   };
 
   // Format duration as MM:SS
@@ -231,24 +309,11 @@ const PhoneConnect = () => {
       if (durationIntervalRef.current) {
         clearInterval(durationIntervalRef.current);
       }
+      if (keepAliveRef.current) {
+        clearInterval(keepAliveRef.current);
+      }
     };
   }, []);
-
-  // Keep-alive ping
-  useEffect(() => {
-    if (connectionStatus === 'connected' || connectionStatus === 'in_call') {
-      const interval = setInterval(async () => {
-        if (connectionId) {
-          await supabase
-            .from('phone_connections')
-            .update({ last_seen_at: new Date().toISOString() })
-            .eq('id', connectionId);
-        }
-      }, 30000); // Every 30 seconds
-
-      return () => clearInterval(interval);
-    }
-  }, [connectionStatus, connectionId]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -312,6 +377,29 @@ const PhoneConnect = () => {
                 <Volume2 className="w-4 h-4 mr-2" />
                 Microphone Ready
               </Badge>
+
+              {/* Quick Dial Section */}
+              <div className="space-y-2 p-3 bg-muted/50 rounded-lg border">
+                <Label className="text-sm font-medium">Quick Incoming Call</Label>
+                <p className="text-xs text-muted-foreground">
+                  Receiving a call? Tap below to notify PC
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Caller number"
+                    value={dialNumber}
+                    onChange={(e) => setDialNumber(e.target.value)}
+                    className="font-mono"
+                  />
+                  <Button 
+                    size="icon"
+                    onClick={handleQuickDial}
+                    className="bg-green-500 hover:bg-green-600"
+                  >
+                    <PhoneIncoming className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
 
               <Button 
                 variant="destructive" 
@@ -394,7 +482,8 @@ const PhoneConnect = () => {
               </div>
 
               <p className="text-xs text-center text-muted-foreground">
-                Use your phone's dialer to make the actual call. Audio is being recorded.
+                Use your phone's native dialer app to make/receive calls. 
+                Audio from your PC will be recorded.
               </p>
             </div>
           )}
