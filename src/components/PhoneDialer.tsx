@@ -14,7 +14,9 @@ import {
   Loader2,
   Smartphone,
   PhoneOutgoing,
-  AlertCircle
+  AlertCircle,
+  PhoneIncoming,
+  Volume2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,7 +33,8 @@ interface PhoneDialerProps {
   isPhoneConnected: boolean;
 }
 
-type CallState = 'idle' | 'connecting' | 'ringing' | 'connected' | 'ended' | 'failed';
+type CallState = 'idle' | 'connecting' | 'ringing' | 'connected' | 'ended' | 'failed' | 'incoming';
+type CallDirection = 'outgoing' | 'incoming';
 
 export const PhoneDialer = ({ 
   isOpen, 
@@ -45,6 +48,7 @@ export const PhoneDialer = ({
   const [callState, setCallState] = useState<CallState>('idle');
   const [callDuration, setCallDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+  const [callDirection, setCallDirection] = useState<CallDirection>('outgoing');
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -55,6 +59,7 @@ export const PhoneDialer = ({
       setCallState('idle');
       setCallDuration(0);
       setIsMuted(false);
+      setCallDirection('outgoing');
     }
     
     return () => {
@@ -92,6 +97,31 @@ export const PhoneDialer = ({
           setCallState('idle');
           setCallDuration(0);
         }, 2000);
+      })
+      .on('broadcast', { event: 'incoming-call' }, async ({ payload }) => {
+        console.log('Incoming call from phone:', payload);
+        setCallDirection('incoming');
+        setCallState('incoming');
+        
+        // Start duration timer
+        durationIntervalRef.current = setInterval(() => {
+          setCallDuration(prev => prev + 1);
+        }, 1000);
+
+        // Start recording
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          await startRecording(stream, {
+            customerId,
+            customerName: payload.callerName || 'Unknown',
+            customerPhone: payload.callerPhone || phoneNumber,
+            callType: 'incoming',
+          });
+        } catch (err) {
+          console.error('Could not start recording:', err);
+        }
+
+        toast.info(`Incoming call: ${payload.callerName || 'Unknown'}`);
       })
       .subscribe();
 
@@ -195,6 +225,7 @@ export const PhoneDialer = ({
     switch (callState) {
       case 'connecting': return 'Connecting to phone...';
       case 'ringing': return 'Ringing...';
+      case 'incoming': return `Incoming - ${formatDuration(callDuration)}`;
       case 'connected': return formatDuration(callDuration);
       case 'ended': return 'Call Ended';
       case 'failed': return 'Call Failed';
@@ -206,6 +237,7 @@ export const PhoneDialer = ({
     switch (callState) {
       case 'connecting':
       case 'ringing': return 'text-yellow-500';
+      case 'incoming': return 'text-blue-500';
       case 'connected': return 'text-green-500';
       case 'ended': return 'text-muted-foreground';
       case 'failed': return 'text-destructive';
@@ -213,7 +245,7 @@ export const PhoneDialer = ({
     }
   };
 
-  const isCallActive = callState === 'connecting' || callState === 'ringing' || callState === 'connected';
+  const isCallActive = callState === 'connecting' || callState === 'ringing' || callState === 'connected' || callState === 'incoming';
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
@@ -239,6 +271,8 @@ export const PhoneDialer = ({
             "w-16 h-16 rounded-full flex items-center justify-center transition-all",
             callState === 'connected' 
               ? "bg-green-500/20 ring-4 ring-green-500/30" 
+              : callState === 'incoming'
+              ? "bg-blue-500/20 ring-4 ring-blue-500/30 animate-pulse"
               : callState === 'connecting' || callState === 'ringing'
               ? "bg-yellow-500/20 ring-4 ring-yellow-500/30"
               : callState === 'failed'
@@ -247,6 +281,8 @@ export const PhoneDialer = ({
           )}>
             {callState === 'connecting' ? (
               <Loader2 className="w-8 h-8 text-yellow-500 animate-spin" />
+            ) : callState === 'incoming' ? (
+              <PhoneIncoming className="w-8 h-8 text-blue-500 animate-bounce" />
             ) : callState === 'connected' ? (
               <PhoneOutgoing className="w-8 h-8 text-green-500" />
             ) : (
@@ -274,8 +310,8 @@ export const PhoneDialer = ({
             </Badge>
           )}
 
-          {/* Call Controls - Only show when connected */}
-          {callState === 'connected' && (
+          {/* Call Controls - Show when connected or incoming */}
+          {(callState === 'connected' || callState === 'incoming') && (
             <div className="flex items-center justify-center gap-6">
               <Button
                 variant="ghost"
@@ -287,6 +323,13 @@ export const PhoneDialer = ({
                 onClick={() => setIsMuted(!isMuted)}
               >
                 {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full h-10 w-10"
+              >
+                <Volume2 className="w-5 h-5" />
               </Button>
             </div>
           )}
@@ -325,10 +368,12 @@ export const PhoneDialer = ({
               variant="outline" 
               className={cn(
                 "text-xs",
-                callState === 'connected' && "border-green-500 text-green-500"
+                callState === 'connected' && "border-green-500 text-green-500",
+                callState === 'incoming' && "border-blue-500 text-blue-500"
               )}
             >
-              {callState === 'connected' ? 'On Call via Phone' : 'Connecting...'}
+              {callState === 'connected' ? 'Outgoing Call via Phone' : 
+               callState === 'incoming' ? 'Incoming Call via Phone' : 'Connecting...'}
             </Badge>
           )}
 

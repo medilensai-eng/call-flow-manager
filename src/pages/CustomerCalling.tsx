@@ -13,7 +13,7 @@ import { PhoneDialer } from '@/components/PhoneDialer';
 import { usePhoneConnection } from '@/hooks/usePhoneConnection';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Phone, Mail, BookOpen, DollarSign, ChevronLeft, ChevronRight, Send, PhoneCall } from 'lucide-react';
+import { Phone, Mail, BookOpen, DollarSign, ChevronLeft, ChevronRight, Send, PhoneCall, PhoneIncoming } from 'lucide-react';
 
 type CallStatus = 
   | 'pending'
@@ -55,6 +55,7 @@ const CustomerCalling = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isDialerOpen, setIsDialerOpen] = useState(false);
+  const [incomingCall, setIncomingCall] = useState<{callerName: string; callerPhone: string} | null>(null);
   const { connection, isConnected: isPhoneConnected } = usePhoneConnection();
 
   const fetchCustomers = async () => {
@@ -78,6 +79,33 @@ const CustomerCalling = () => {
   useEffect(() => {
     fetchCustomers();
   }, [user]);
+
+  // Listen for incoming calls from phone
+  useEffect(() => {
+    if (!connection?.id) return;
+
+    const channel = supabase.channel(`phone-call:${connection.id}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    channel
+      .on('broadcast', { event: 'incoming-call' }, ({ payload }) => {
+        console.log('Incoming call notification:', payload);
+        setIncomingCall({
+          callerName: payload.callerName || 'Unknown',
+          callerPhone: payload.callerPhone || 'Unknown',
+        });
+        setIsDialerOpen(true);
+        toast.info(`Incoming call from ${payload.callerName || 'Unknown'}`, {
+          duration: 5000,
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [connection?.id]);
 
   const currentCustomer = customers[currentIndex];
 
@@ -182,6 +210,30 @@ const CustomerCalling = () => {
             {/* Phone Connection QR */}
             <div className="lg:col-span-1">
               <PhoneConnectionQR />
+              
+              {/* Incoming Call Banner */}
+              {incomingCall && (
+                <Card className="mt-4 shadow-card border-blue-500/50 bg-blue-500/5">
+                  <CardContent className="py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center animate-pulse">
+                        <PhoneIncoming className="w-5 h-5 text-blue-500" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm">{incomingCall.callerName}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{incomingCall.callerPhone}</p>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => setIncomingCall(null)}
+                      >
+                        Dismiss
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
             {/* Customer Details & Call Form */}
             <div className="lg:col-span-2 space-y-6">

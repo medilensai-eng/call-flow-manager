@@ -12,9 +12,11 @@ import {
   Loader2,
   Link2,
   Link2Off,
-  QrCode
+  Copy,
+  Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface PhoneConnectionQRProps {
   className?: string;
@@ -29,6 +31,7 @@ export const PhoneConnectionQR = ({ className }: PhoneConnectionQRProps) => {
     disconnect 
   } = usePhoneConnection();
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleRegenerate = async () => {
     setIsRegenerating(true);
@@ -39,8 +42,21 @@ export const PhoneConnectionQR = ({ className }: PhoneConnectionQRProps) => {
   // Build the phone connection URL
   const getConnectionUrl = () => {
     if (!connection) return '';
-    const baseUrl = window.location.origin;
+    // Use the published URL for phone access (works from any network)
+    // Fallback to current origin for development
+    const publishedUrl = 'https://tele-glide-app.lovable.app';
+    const baseUrl = window.location.hostname.includes('localhost') 
+      ? window.location.origin 
+      : publishedUrl;
     return `${baseUrl}/phone-connect?code=${connection.connection_code}`;
+  };
+
+  const copyLink = async () => {
+    const url = getConnectionUrl();
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    toast.success('Link copied! Open it on your phone.');
+    setTimeout(() => setCopied(false), 2000);
   };
 
   if (isLoading) {
@@ -133,6 +149,19 @@ export const PhoneConnectionQR = ({ className }: PhoneConnectionQRProps) => {
                 <RefreshCw className="w-4 h-4 mr-2" />
               )}
               Generate New Code
+            </Button>
+
+            <Button 
+              variant="secondary" 
+              className="w-full"
+              onClick={copyLink}
+            >
+              {copied ? (
+                <Check className="w-4 h-4 mr-2" />
+              ) : (
+                <Copy className="w-4 h-4 mr-2" />
+              )}
+              {copied ? 'Copied!' : 'Copy Link for Phone'}
             </Button>
           </div>
         )}
