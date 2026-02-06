@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'in_call';
 type CallDirection = 'incoming' | 'outgoing';
+type CallStage = 'requested' | 'active';
 
 interface CallInfo {
   type: CallDirection;
@@ -46,6 +47,7 @@ const PhoneConnect = () => {
   const [connectionId, setConnectionId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [callInfo, setCallInfo] = useState<CallInfo | null>(null);
+  const [callStage, setCallStage] = useState<CallStage>('requested');
   const [callDuration, setCallDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
@@ -152,26 +154,30 @@ const PhoneConnect = () => {
     channel
       .on('broadcast', { event: 'start-call' }, ({ payload }) => {
         console.log('Received call request:', payload);
+
         // Vibrate to notify user
         if (navigator.vibrate) {
           navigator.vibrate([200, 100, 200]);
         }
+
+        // Reset any previous timers/state; recording should start on PC only after user confirms “Call Started”.
+        if (durationIntervalRef.current) {
+          clearInterval(durationIntervalRef.current);
+          durationIntervalRef.current = null;
+        }
+
         setCallInfo({
           type: payload.type || 'outgoing',
           customerName: payload.customerName,
           customerPhone: payload.customerPhone,
           customerId: payload.customerId,
         });
+        setCallStage('requested');
         setConnectionStatus('in_call');
         setCallDuration(0);
-        
-        // Start duration timer
-        durationIntervalRef.current = setInterval(() => {
-          setCallDuration(prev => prev + 1);
-        }, 1000);
 
-        toast.success(`Call to ${payload.customerName}`, {
-          description: 'Use your phone dialer to make the call',
+        toast.info(`Call request: ${payload.customerName}`, {
+          description: 'Call phone par start karo, fir “Call Started” dabao',
         });
       })
       .on('broadcast', { event: 'end-call' }, () => {
@@ -187,12 +193,51 @@ const PhoneConnect = () => {
     channelRef.current = channel;
   };
 
-  // End current call
-  const endCall = () => {
+  const stopCallTimer = () => {
     if (durationIntervalRef.current) {
       clearInterval(durationIntervalRef.current);
       durationIntervalRef.current = null;
     }
+  };
+
+  const startCallTimer = () => {
+    stopCallTimer();
+    durationIntervalRef.current = setInterval(() => {
+      setCallDuration((prev) => prev + 1);
+    }, 1000);
+  };
+
+  const openNativeDialer = (phone: string) => {
+    const normalized = phone.replace(/[^\d+]/g, '');
+    // This will open the device dialer; user still needs to confirm the call.
+    window.location.href = `tel:${normalized}`;
+  };
+
+  const notifyPcCallStarted = () => {
+    if (!callInfo) return;
+
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'call-started',
+      payload: {
+        direction: callInfo.type,
+        customerId: callInfo.customerId,
+        customerName: callInfo.customerName,
+        customerPhone: callInfo.customerPhone,
+        startedAt: new Date().toISOString(),
+      },
+    });
+
+    setCallStage('active');
+    setCallDuration(0);
+    startCallTimer();
+
+    toast.success('PC ko notify kar diya (recording start ho jayegi)');
+  };
+
+  // End current call
+  const endCall = () => {
+    stopCallTimer();
 
     // Notify PC that call ended
     channelRef.current?.send({
@@ -205,6 +250,7 @@ const PhoneConnect = () => {
     });
 
     setCallInfo(null);
+    setCallStage('requested');
     setCallDuration(0);
     setConnectionStatus('connected');
   };
@@ -240,13 +286,16 @@ const PhoneConnect = () => {
     setConnectionStatus('disconnected');
     setConnectionId(null);
     setCallInfo(null);
+    setCallStage('requested');
+    setCallDuration(0);
     toast.info('Disconnected from PC');
   };
 
   // Initiate incoming call (from phone to PC)
   const initiateIncomingCall = (callerName: string, callerPhone: string) => {
     if (!channelRef.current) return;
-    
+
+    // Incoming notification (PC will open the dialer UI)
     channelRef.current.send({
       type: 'broadcast',
       event: 'incoming-call',
@@ -257,18 +306,16 @@ const PhoneConnect = () => {
       },
     });
 
+    // On phone UI, move to “requested” state. PC recording should only start after user taps “Answered”.
+    stopCallTimer();
     setCallInfo({
       type: 'incoming',
       customerName: callerName,
       customerPhone: callerPhone,
     });
+    setCallStage('requested');
     setConnectionStatus('in_call');
     setCallDuration(0);
-    
-    // Start duration timer
-    durationIntervalRef.current = setInterval(() => {
-      setCallDuration(prev => prev + 1);
-    }, 1000);
   };
 
   // Quick dial from phone
@@ -438,48 +485,74 @@ const PhoneConnect = () => {
                 </p>
               </div>
 
-              {/* Call Controls */}
-              <div className="flex items-center justify-center gap-4">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className={cn(
-                    "rounded-full h-14 w-14",
-                    isMuted && "bg-destructive/10 text-destructive border-destructive"
+              {/* Call Stage Actions */}
+              {callStage === 'requested' && (
+                <div className="space-y-2">
+                  {callInfo.type === 'outgoing' && (
+                    <Button className="w-full" onClick={() => openNativeDialer(callInfo.customerPhone)}>
+                      <Phone className="w-4 h-4 mr-2" />
+                      Open Dialer
+                    </Button>
                   )}
-                  onClick={() => {
-                    setIsMuted(!isMuted);
-                    if (localStreamRef.current) {
-                      localStreamRef.current.getAudioTracks().forEach(track => {
-                        track.enabled = isMuted;
-                      });
-                    }
-                  }}
-                >
-                  {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
-                </Button>
 
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  className="rounded-full h-16 w-16"
-                  onClick={endCall}
-                >
-                  <PhoneOff className="w-7 h-7" />
-                </Button>
+                  <Button variant="secondary" className="w-full" onClick={notifyPcCallStarted}>
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    {callInfo.type === 'outgoing' ? 'Call Started' : 'Answered'}
+                  </Button>
 
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className={cn(
-                    "rounded-full h-14 w-14",
-                    isSpeakerOn && "bg-primary/10 text-primary border-primary"
-                  )}
-                  onClick={() => setIsSpeakerOn(!isSpeakerOn)}
-                >
-                  <Volume2 className="w-6 h-6" />
-                </Button>
-              </div>
+                  <p className="text-xs text-center text-muted-foreground">
+                    {callInfo.type === 'outgoing'
+                      ? 'Phone par call start karke yahan “Call Started” dabao.'
+                      : 'Call utha liya? “Answered” dabao taaki PC recording start ho.'}
+                  </p>
+                </div>
+              )}
+
+              {/* Call Controls (only while active) */}
+              {callStage === 'active' && (
+                <div className="flex items-center justify-center gap-4">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className={cn(
+                      "rounded-full h-14 w-14",
+                      isMuted && "bg-destructive/10 text-destructive border-destructive"
+                    )}
+                    onClick={() => {
+                      const nextMuted = !isMuted;
+                      setIsMuted(nextMuted);
+                      if (localStreamRef.current) {
+                        localStreamRef.current.getAudioTracks().forEach((track) => {
+                          track.enabled = !nextMuted;
+                        });
+                      }
+                    }}
+                  >
+                    {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+                  </Button>
+
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="rounded-full h-16 w-16"
+                    onClick={endCall}
+                  >
+                    <PhoneOff className="w-7 h-7" />
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className={cn(
+                      "rounded-full h-14 w-14",
+                      isSpeakerOn && "bg-primary/10 text-primary border-primary"
+                    )}
+                    onClick={() => setIsSpeakerOn(!isSpeakerOn)}
+                  >
+                    <Volume2 className="w-6 h-6" />
+                  </Button>
+                </div>
+              )}
 
               <p className="text-xs text-center text-muted-foreground">
                 Use your phone's native dialer app to make/receive calls. 
