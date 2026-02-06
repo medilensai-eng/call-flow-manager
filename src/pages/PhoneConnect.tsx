@@ -60,58 +60,57 @@ const PhoneConnect = () => {
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const keepAliveRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Call backend function (bypasses DB RLS for anonymous phone)
+  const invokePhoneConnection = async (payload: Record<string, unknown>) => {
+    const { data, error } = await supabase.functions.invoke('phone-connection', {
+      body: payload,
+    });
+
+    if (error) {
+      console.error('[phone-connect] function error:', error);
+      throw error;
+    }
+
+    return data as any;
+  };
+
   // Connect using code
   const connect = async (connectionCode: string) => {
     setConnectionStatus('connecting');
 
     try {
-      // Find the connection record
-      const { data, error } = await supabase
-        .from('phone_connections')
-        .select('*')
-        .eq('connection_code', connectionCode.toUpperCase())
-        .single();
-
-      if (error || !data) {
-        toast.error('Invalid connection code');
-        setConnectionStatus('disconnected');
-        return;
-      }
-
-      // Update connection status
       const deviceInfo = {
-        device: navigator.userAgent.includes('iPhone') ? 'iPhone' : 
-                navigator.userAgent.includes('Android') ? 'Android' : 'Mobile',
+        device: navigator.userAgent.includes('iPhone')
+          ? 'iPhone'
+          : navigator.userAgent.includes('Android')
+            ? 'Android'
+            : 'Mobile',
         userAgent: navigator.userAgent,
         connectedAt: new Date().toISOString(),
       };
 
-      const { error: updateError } = await supabase
-        .from('phone_connections')
-        .update({
-          is_connected: true,
-          phone_info: deviceInfo,
-          connected_at: new Date().toISOString(),
-          last_seen_at: new Date().toISOString(),
-        })
-        .eq('id', data.id);
+      const res = await invokePhoneConnection({
+        action: 'connect',
+        code: connectionCode.toUpperCase(),
+        deviceInfo,
+      });
 
-      if (updateError) {
-        toast.error('Failed to connect');
+      if (!res?.ok || !res?.connectionId || !res?.userId) {
+        toast.error(res?.error || 'Invalid connection code');
         setConnectionStatus('disconnected');
         return;
       }
 
-      setConnectionId(data.id);
-      setUserId(data.user_id);
+      setConnectionId(res.connectionId);
+      setUserId(res.userId);
       setConnectionStatus('connected');
       toast.success('Connected to PC!');
 
       // Subscribe to call events
-      subscribeToEvents(data.id, data.user_id);
+      subscribeToEvents(res.connectionId, res.userId);
 
       // Start keep-alive ping immediately
-      startKeepAlive(data.id);
+      startKeepAlive(res.connectionId);
 
       // Request microphone access
       try {
@@ -121,7 +120,6 @@ const PhoneConnect = () => {
         console.error('Microphone access denied:', err);
         toast.error('Microphone access required for calls');
       }
-
     } catch (err) {
       console.error('Connection error:', err);
       toast.error('Connection failed');
@@ -135,13 +133,14 @@ const PhoneConnect = () => {
     if (keepAliveRef.current) {
       clearInterval(keepAliveRef.current);
     }
-    
+
     // Ping every 15 seconds
     keepAliveRef.current = setInterval(async () => {
-      await supabase
-        .from('phone_connections')
-        .update({ last_seen_at: new Date().toISOString() })
-        .eq('id', connId);
+      try {
+        await invokePhoneConnection({ action: 'ping', connectionId: connId });
+      } catch (e) {
+        console.error('[phone-connect] ping failed:', e);
+      }
     }, 15000);
   };
 
@@ -265,14 +264,11 @@ const PhoneConnect = () => {
     }
 
     if (connectionId) {
-      await supabase
-        .from('phone_connections')
-        .update({
-          is_connected: false,
-          phone_info: {},
-          connected_at: null,
-        })
-        .eq('id', connectionId);
+      try {
+        await invokePhoneConnection({ action: 'disconnect', connectionId });
+      } catch (e) {
+        console.error('[phone-connect] disconnect failed:', e);
+      }
     }
 
     if (channelRef.current) {
@@ -280,7 +276,7 @@ const PhoneConnect = () => {
     }
 
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
+      localStreamRef.current.getTracks().forEach((track) => track.stop());
     }
 
     setConnectionStatus('disconnected');
