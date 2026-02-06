@@ -69,7 +69,7 @@ export const PhoneDialer = ({
     };
   }, [isOpen]);
 
-  // Subscribe to phone events when call starts
+  // Subscribe to phone events when a call UI is active
   useEffect(() => {
     if (!connectionId || callState === 'idle') return;
 
@@ -78,49 +78,63 @@ export const PhoneDialer = ({
     });
 
     channel
-      .on('broadcast', { event: 'call-ended' }, async ({ payload }) => {
-        console.log('Phone ended call:', payload);
-        setCallState('ended');
-        
+      .on('broadcast', { event: 'call-started' }, async ({ payload }) => {
+        console.log('Phone confirmed call started:', payload);
+
+        const direction: CallDirection = payload.direction === 'incoming' ? 'incoming' : 'outgoing';
+        setCallDirection(direction);
+        setCallState('connected');
+        setCallDuration(0);
+
         if (durationIntervalRef.current) {
           clearInterval(durationIntervalRef.current);
         }
-        
-        // Stop recording
-        if (isRecording) {
-          await stopRecording();
-        }
-        
-        toast.success(`Call ended - Duration: ${formatDuration(payload.duration || callDuration)}`);
-        
-        setTimeout(() => {
-          setCallState('idle');
-          setCallDuration(0);
-        }, 2000);
-      })
-      .on('broadcast', { event: 'incoming-call' }, async ({ payload }) => {
-        console.log('Incoming call from phone:', payload);
-        setCallDirection('incoming');
-        setCallState('incoming');
-        
-        // Start duration timer
         durationIntervalRef.current = setInterval(() => {
-          setCallDuration(prev => prev + 1);
+          setCallDuration((prev) => prev + 1);
         }, 1000);
 
-        // Start recording
+        // Start recording on PC ONLY after phone confirms call has started/answered
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           await startRecording(stream, {
-            customerId,
-            customerName: payload.callerName || 'Unknown',
-            customerPhone: payload.callerPhone || phoneNumber,
-            callType: 'incoming',
+            customerId: payload.customerId ?? customerId,
+            customerName: payload.customerName ?? customerName,
+            customerPhone: payload.customerPhone ?? phoneNumber,
+            callType: direction,
           });
         } catch (err) {
           console.error('Could not start recording:', err);
         }
 
+        toast.success(direction === 'incoming' ? 'Incoming call answered' : 'Call started on phone');
+      })
+      .on('broadcast', { event: 'call-ended' }, async ({ payload }) => {
+        console.log('Phone ended call:', payload);
+        setCallState('ended');
+
+        if (durationIntervalRef.current) {
+          clearInterval(durationIntervalRef.current);
+        }
+
+        // Stop recording
+        if (isRecording) {
+          await stopRecording();
+        }
+
+        toast.success(`Call ended - Duration: ${formatDuration(payload.duration || callDuration)}`);
+
+        setTimeout(() => {
+          setCallState('idle');
+          setCallDuration(0);
+        }, 2000);
+      })
+      .on('broadcast', { event: 'incoming-call' }, ({ payload }) => {
+        console.log('Incoming call from phone:', payload);
+        setCallDirection('incoming');
+        setCallState('incoming');
+        setCallDuration(0);
+
+        // Recording will start only when phone sends `call-started`
         toast.info(`Incoming call: ${payload.callerName || 'Unknown'}`);
       })
       .subscribe();
@@ -130,7 +144,17 @@ export const PhoneDialer = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [connectionId, callState]);
+  }, [
+    connectionId,
+    callState,
+    callDuration,
+    customerId,
+    customerName,
+    phoneNumber,
+    isRecording,
+    startRecording,
+    stopRecording,
+  ]);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -144,14 +168,18 @@ export const PhoneDialer = ({
       return;
     }
 
+    setCallDirection('outgoing');
     setCallState('connecting');
+    setCallDuration(0);
 
     try {
       // Send call request to phone
-      const channel = supabase.channel(`phone-call:${connectionId}`);
-      
-      await channel.subscribe();
-      
+      const channel = channelRef.current ?? supabase.channel(`phone-call:${connectionId}`);
+      if (!channelRef.current) {
+        channelRef.current = channel;
+        channel.subscribe();
+      }
+
       await channel.send({
         type: 'broadcast',
         event: 'start-call',
@@ -163,27 +191,7 @@ export const PhoneDialer = ({
         },
       });
 
-      setCallState('connected');
-      toast.success('Call started on your phone!');
-
-      // Start duration timer
-      durationIntervalRef.current = setInterval(() => {
-        setCallDuration(prev => prev + 1);
-      }, 1000);
-
-      // Start recording (we'll record the PC audio for now)
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        await startRecording(stream, {
-          customerId,
-          customerName,
-          customerPhone: phoneNumber,
-          callType: 'outgoing',
-        });
-      } catch (err) {
-        console.error('Could not start recording:', err);
-      }
-
+      toast.info('Phone ko request bhej di—phone par call start karke “Call Started” dabao.');
     } catch (err) {
       console.error('Call error:', err);
       setCallState('failed');
@@ -198,8 +206,12 @@ export const PhoneDialer = ({
 
     // Notify phone to end call
     if (connectionId) {
-      const channel = supabase.channel(`phone-call:${connectionId}`);
-      await channel.subscribe();
+      const channel = channelRef.current ?? supabase.channel(`phone-call:${connectionId}`);
+      if (!channelRef.current) {
+        channelRef.current = channel;
+        channel.subscribe();
+      }
+
       await channel.send({
         type: 'broadcast',
         event: 'end-call',

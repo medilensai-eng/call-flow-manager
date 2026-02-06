@@ -40,10 +40,16 @@ export const PhoneConnectionQR = ({ className }: PhoneConnectionQRProps) => {
   };
 
   // Build the phone connection URL
+  const PUBLISHED_ORIGIN = 'https://tele-glide-app.lovable.app';
+
   const getConnectionUrl = () => {
     if (!connection) return '';
-    // Use the current origin - works for both preview and published URLs
-    const baseUrl = window.location.origin;
+
+    // Preview URLs open via Lovable auth-bridge on other devices (mobile) and show Access Denied.
+    // So, when running in preview, always point phones to the published URL.
+    const isPreviewHost = window.location.hostname.startsWith('id-preview--');
+    const baseUrl = isPreviewHost ? PUBLISHED_ORIGIN : window.location.origin;
+
     return `${baseUrl}/phone-connect?code=${connection.connection_code}`;
   };
 
