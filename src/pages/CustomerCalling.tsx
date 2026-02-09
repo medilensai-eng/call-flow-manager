@@ -8,12 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
 import { FaceMonitor } from '@/components/FaceMonitor';
-import { PhoneConnectionQR } from '@/components/PhoneConnectionQR';
 import { PhoneDialer } from '@/components/PhoneDialer';
-import { usePhoneConnection } from '@/hooks/usePhoneConnection';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Phone, Mail, BookOpen, DollarSign, ChevronLeft, ChevronRight, Send, PhoneCall, PhoneIncoming } from 'lucide-react';
+import { Phone, Mail, BookOpen, DollarSign, ChevronLeft, ChevronRight, Send, PhoneCall } from 'lucide-react';
 
 type CallStatus = 
   | 'pending'
@@ -55,8 +53,6 @@ const CustomerCalling = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isDialerOpen, setIsDialerOpen] = useState(false);
-  const [incomingCall, setIncomingCall] = useState<{callerName: string; callerPhone: string} | null>(null);
-  const { connection, isConnected: isPhoneConnected } = usePhoneConnection();
 
   const fetchCustomers = async () => {
     if (!user) return;
@@ -80,33 +76,6 @@ const CustomerCalling = () => {
     fetchCustomers();
   }, [user]);
 
-  // Listen for incoming calls from phone
-  useEffect(() => {
-    if (!connection?.id) return;
-
-    const channel = supabase.channel(`phone-call:${connection.id}`, {
-      config: { broadcast: { self: false } },
-    });
-
-    channel
-      .on('broadcast', { event: 'incoming-call' }, ({ payload }) => {
-        console.log('Incoming call notification:', payload);
-        setIncomingCall({
-          callerName: payload.callerName || 'Unknown',
-          callerPhone: payload.callerPhone || 'Unknown',
-        });
-        setIsDialerOpen(true);
-        toast.info(`Incoming call from ${payload.callerName || 'Unknown'}`, {
-          duration: 5000,
-        });
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [connection?.id]);
-
   const currentCustomer = customers[currentIndex];
 
   const handleSubmit = async () => {
@@ -115,7 +84,6 @@ const CustomerCalling = () => {
       return;
     }
 
-    // Remark is required for all statuses except 'interested'
     if (selectedStatus !== 'interested' && !remark.trim()) {
       toast.error('Please enter a remark');
       return;
@@ -139,7 +107,6 @@ const CustomerCalling = () => {
       setSelectedStatus('');
       setRemark('');
       
-      // Remove from list and move to next
       const newCustomers = customers.filter((_, i) => i !== currentIndex);
       setCustomers(newCustomers);
       if (currentIndex >= newCustomers.length) {
@@ -189,7 +156,6 @@ const CustomerCalling = () => {
             </p>
           </div>
           
-          {/* Face Monitor */}
           <div className="w-full sm:w-72 lg:w-auto">
             <FaceMonitor />
           </div>
@@ -206,37 +172,8 @@ const CustomerCalling = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Phone Connection QR */}
-            <div className="lg:col-span-1">
-              <PhoneConnectionQR />
-              
-              {/* Incoming Call Banner */}
-              {incomingCall && (
-                <Card className="mt-4 shadow-card border-blue-500/50 bg-blue-500/5">
-                  <CardContent className="py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center animate-pulse">
-                        <PhoneIncoming className="w-5 h-5 text-blue-500" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm">{incomingCall.callerName}</p>
-                        <p className="text-xs text-muted-foreground font-mono">{incomingCall.callerPhone}</p>
-                      </div>
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => setIncomingCall(null)}
-                      >
-                        Dismiss
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-            {/* Customer Details & Call Form */}
-            <div className="lg:col-span-2 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Customer Details */}
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle className="font-display flex items-center justify-between">
@@ -365,7 +302,6 @@ const CustomerCalling = () => {
                 </Button>
               </CardContent>
             </Card>
-            </div>
           </div>
         )}
 
@@ -376,9 +312,6 @@ const CustomerCalling = () => {
             onClose={() => setIsDialerOpen(false)}
             phoneNumber={currentCustomer.customer_phone}
             customerName={currentCustomer.customer_name}
-            customerId={currentCustomer.id}
-            connectionId={connection?.id || null}
-            isPhoneConnected={isPhoneConnected}
           />
         )}
     </DashboardLayout>
